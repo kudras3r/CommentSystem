@@ -13,20 +13,6 @@ import (
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string, authorID string, allowComms bool) (*model.Post, error) {
-	// panic(fmt.Errorf("not implemented: CreatePost - createPost"))
-	// post := &model.Post{
-	// 	ID:         strconv.Itoa(len(r.posts) + 1),
-	// 	Title:      title,
-	// 	Content:    content,
-	// 	AuthorID:   authorID,
-	// 	AllowComms: allowComms,
-	// 	CreatedAt:  time.Now().Format(time.RFC3339),
-	// 	Rating:     0,
-	// 	Comments:   &model.CommentsConnection{},
-	// }
-	// r.posts = append(r.posts, post)
-
-	// return post, nil
 	return r.Storage.CreatePost(title, content, authorID, allowComms)
 }
 

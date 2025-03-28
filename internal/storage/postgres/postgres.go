@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/kudras3r/CommentSystem/internal/storage"
 	"github.com/kudras3r/CommentSystem/internal/storage/model"
 	"github.com/kudras3r/CommentSystem/pkg/config"
 
@@ -39,13 +40,13 @@ func (pg *pgDB) GetConnection() *sql.DB {
 
 func (pg *pgDB) CreatePost(title, content, authorID string, allowComment bool) (*model.Post, error) {
 	query := `INSERT INTO posts (title, content, author_id, allow_comms) 
-              VALUES ($1, $2, $3, $4) 
-              RETURNING id, title, content, allow_comms, created_at, rating, author_id`
+		VALUES ($1, $2, $3, $4) 
+		RETURNING id, title, content, allow_comms, created_at, rating, author_id`
 
 	var post model.Post
 	err := pg.DB.QueryRowx(query, title, content, authorID, allowComment).StructScan(&post)
 	if err != nil {
-		return nil, err
+		return nil, storage.FailedToInsert(err)
 	}
 
 	return &post, nil

@@ -15,7 +15,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	// "github.com/kudras3r/CommentSystem/internal/api/graph/model"
 	"github.com/kudras3r/CommentSystem/internal/storage/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"

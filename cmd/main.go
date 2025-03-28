@@ -10,7 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/kudras3r/CommentSystem/internal/api/graph"
+	graph "github.com/kudras3r/CommentSystem/internal/api/graphql"
 	"github.com/kudras3r/CommentSystem/internal/storage/migrate"
 	"github.com/kudras3r/CommentSystem/internal/storage/postgres"
 	"github.com/kudras3r/CommentSystem/pkg/config"
@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 
 	}
+	defer storage.CloseConnection()
 
 	// migrations
 	if err := migrate.CreateTables(storage.GetConnection()); err != nil {

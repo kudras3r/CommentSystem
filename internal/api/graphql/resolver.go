@@ -7,7 +7,3 @@ import (
 type Resolver struct {
 	Storage storage.Storage
 }
-
-// func (r *Resolver) GetPost(ctx context.Context) ([]*model.Post, error) {
-// 	return r.posts, nil
-// }
