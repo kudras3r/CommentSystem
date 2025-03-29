@@ -1,57 +1,35 @@
-type User {
+type Comment {
   id: ID!
-  username: String!
-  email: String
-  posts: [Post!]!
-  comments: [Comment!]!
+  authorID: ID!
+  content: String!
+  createdAt: String!
+  rating: Int!
+  postID: ID!
+  parentID: ID
+
+  children(first: Int, offset: Int): [Comment]
 }
 
 type Post {
-	id: ID!
+  id: ID!
 	authorID: ID!
 	title: String!
 	content: String!
 	allowComms: Boolean!
 	createdAt: String!
 	rating: Int!
-	comments(first: Int, after: String): CommentsConnection!
-}
 
-type Comment {
-	id: ID!
-	authorID: ID!
-	content: String!
-	createdAt: String!
-	rating: Int!
-	postID: ID!
-	parentID: ID
-}
-
-type CommentsConnection {
-	edges: [CommEdge!]!
-	pageInfo: PageInfo!	
-}
-
-type CommEdge {
-	node: Comment!
-	cursor: String!
-}
-
-type PageInfo {
-	endCursor: String!
-	hasNextPage: Boolean!
+  comments(first: Int, offset: Int): [Comment]
 }
 
 type Query {
-	posts(first: Int, after: String): [Post!]!
-	post(id: ID!): Post
-	comments(postID: ID!, first: Int, after: String): CommentsConnection!
+  posts(first: Int, offset: Int): [Post!]!
+  post(id: ID!): Post
 }
 
 type Mutation {
   createPost(title: String!, content: String!, authorID: ID!, allowComms: Boolean!): Post!
   createComment(postID: ID!, content: String!, authorID: ID!, parentID: ID): Comment!
-  updatePost(postID: ID!, allowComms: Boolean!): Post!
 }
 
 type Subscription {

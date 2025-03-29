@@ -1,14 +1,15 @@
+
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
-  - graph/*.graphqls
+  - graphql/*.graphqls
 
 # Where should the generated server code go?
 exec:
-  package: graph
+  package: graphql
   layout: single-file # Only other option is "follow-schema," ie multi-file.
 
   # Only for single-file layout:
-  filename: graph/generated.go
+  filename: graphql/generated.go
 
   # Only for follow-schema layout:
   # dir: graph
@@ -27,7 +28,7 @@ exec:
 
 # Where should any generated models go?
 model:
-  filename: graph/model/models_gen.go
+  filename: ../storage/model/models_gen.go
   package: model
 
   # Optional: Pass in a path to a new gotpl template to use for generating the models
@@ -35,7 +36,7 @@ model:
 
 # Where should the resolver implementations go?
 resolver:
-  package: graph
+  package: graphql
   layout: follow-schema # Only other option is "single-file."
 
   # Only for single-file layout:
@@ -117,7 +118,7 @@ call_argument_directives_with_null: true
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-#  - "github.com/kudras3r/CommentSystem/api/graph/model"
+#  - "github.com/kudras3r/CommentSystem/internal/api/graph/model"
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -125,6 +126,17 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+
+  Post:
+    fields:
+      comments:
+        resolver: true
+
+  Comment:
+    fields:
+      children:
+        resolver: true
+
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID
@@ -136,6 +148,7 @@ models:
   UUID:
     model:
       - github.com/99designs/gqlgen/graphql.UUID
+
 
   # The GraphQL spec explicitly states that the Int type is a signed 32-bit
   # integer. Using Go int or int64 to represent it can lead to unexpected

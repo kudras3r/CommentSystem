@@ -10,7 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
-	graph "github.com/kudras3r/CommentSystem/internal/api/graphql"
+	"github.com/kudras3r/CommentSystem/internal/api/graphql"
 	"github.com/kudras3r/CommentSystem/internal/storage/migrate"
 	"github.com/kudras3r/CommentSystem/internal/storage/postgres"
 	"github.com/kudras3r/CommentSystem/pkg/config"
@@ -30,6 +30,7 @@ func main() {
 
 	}
 	defer storage.CloseConnection()
+	// storage := inmemory.New()
 
 	// migrations
 	if err := migrate.CreateTables(storage.GetConnection()); err != nil {
@@ -39,10 +40,10 @@ func main() {
 	fmt.Println("migrate...")
 
 	// srv generated
-	resolver := &graph.Resolver{
+	resolver := &graphql.Resolver{
 		Storage: storage,
 	}
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
+	srv := handler.New(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})

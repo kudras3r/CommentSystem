@@ -1,4 +1,4 @@
-package graph
+package graphql
 
 import (
 	"github.com/kudras3r/CommentSystem/internal/storage"

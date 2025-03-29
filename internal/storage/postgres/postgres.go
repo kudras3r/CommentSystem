@@ -59,15 +59,68 @@ func (pg *pgDB) GetPost(id string) (*model.Post, error) {
 	var post model.Post
 	err := pg.DB.Get(&post, query, id)
 	if err != nil {
-		return nil, err
+		return nil, storage.FailedToGetWithId(storage.POST, id, err)
 	}
 
 	return &post, nil
 }
-func (pg *pgDB) GetAllPosts() ([]*model.Post, error) { return nil, nil }
 
-func (pg *pgDB) CreateComment(comment model.Comment) (*model.Comment, error) { return nil, nil }
+func (pg *pgDB) GetAllPosts(limit, offset int) ([]*model.Post, error) {
+	query := `SELECT id, title, content, allow_comms, created_at, rating, author_id
+		FROM posts 
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2`
 
-func (pg *pgDB) GetCommentsByPostID(id string, after string, limit int) ([]*model.Comment, error) {
-	return nil, nil
+	var posts []*model.Post
+	if err := pg.DB.Select(&posts, query, limit, offset); err != nil {
+		return nil, storage.FailedToGetComments(err)
+	}
+
+	return posts, nil
+}
+
+func (pg *pgDB) CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error) {
+	query := `INSERT INTO comments (content, rating, author_id, post_id, parent_id) 
+	VALUES ($1, $2, $3, $4, $5) 
+	RETURNING id, content, created_at`
+
+	var comment model.Comment
+	err := pg.DB.QueryRowx(query, content, 0, authorID, postID, parentID).StructScan(&comment)
+	if err != nil {
+		return nil, storage.FailedToInsert(err)
+	}
+
+	return &comment, nil
+}
+
+func (pg *pgDB) GetCommentsByPostID(id string, limit int, offset int) ([]*model.Comment, error) {
+	query := `SELECT id, content, created_at, rating, author_id, post_id, parent_id
+		FROM comments 
+		WHERE post_id = $1 
+		ORDER BY created_at DESC 
+		LIMIT $2 
+		OFFSET $3`
+
+	var comments []*model.Comment
+	if err := pg.DB.Select(&comments, query, id, limit, offset); err != nil {
+		return nil, storage.FailedToGetComments(err)
+	}
+
+	return comments, nil
+}
+
+func (pg *pgDB) GetCommentsByParent(parent string, limit int, offset int) ([]*model.Comment, error) {
+	query := `SELECT id, content, created_at, rating, author_id, post_id, parent_id
+		FROM comments 
+		WHERE parent_id = $1
+		ORDER BY created_at DESC 
+		LIMIT $2
+		OFFSET $3`
+
+	var comments []*model.Comment
+	if err := pg.DB.Select(&comments, query, parent, limit, offset); err != nil {
+		return nil, storage.FailedToGetComments(err)
+	}
+
+	return comments, nil
 }
