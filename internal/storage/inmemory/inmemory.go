@@ -124,6 +124,7 @@ func (s *IMSt) GetCommentsByPostID(postID string, limit int, offset int) ([]*mod
 
 func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*model.Comment, error) {
 	var comments []*model.Comment
+	// bad O(n) on comments ! think about it TODO
 	for _, comms := range s.comments {
 		for _, comm := range comms {
 			if comm.ParentID != nil && *comm.ParentID == parent {

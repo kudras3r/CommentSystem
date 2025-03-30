@@ -1,4 +1,4 @@
-package migrate
+package migration
 
 import (
 	"database/sql"
@@ -9,12 +9,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func CreateTables(db *sql.DB) error {
+func MakeMigrations(db *sql.DB) error {
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		return err
 	}
-	m, err := migrate.NewWithDatabaseInstance("file://../internal/storage/migrate/migrations", "postgres", driver)
+	m, err := migrate.NewWithDatabaseInstance("file://../internal/storage/migration/migrations", "postgres", driver)
 	if err != nil {
 		return err
 	}

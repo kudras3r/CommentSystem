@@ -8,26 +8,58 @@ import (
 	"github.com/kudras3r/CommentSystem/internal/storage"
 	"github.com/kudras3r/CommentSystem/internal/storage/model"
 	"github.com/kudras3r/CommentSystem/pkg/config"
+	"github.com/kudras3r/CommentSystem/pkg/logger"
 
 	_ "github.com/lib/pq"
 )
 
 type pgDB struct {
-	DB *sqlx.DB
+	DB  *sqlx.DB
+	log *logger.Logger
 }
 
-func New(config config.DB) (*pgDB, error) {
+// func New(config config.DB, log *logger.Logger) (*pgDB, error) {
+// 	connStr := fmt.Sprintf(
+// 		`host=%s port=%d user=%s
+// 		password=%s dbname=%s sslmode=disable`,
+// 		config.Host, config.Port, config.User,
+// 		config.Pass, config.Name)
+
+// 	db, err := sqlx.Connect("postgres", connStr)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &pgDB{
+// 		DB:  db,
+// 		log: log,
+// 	}, nil
+// }
+
+func New(config config.DB, log *logger.Logger) (*pgDB, error) {
+	// Проверка на пустые параметры
+	if config.Host == "" || config.Port == 0 || config.User == "" || config.Pass == "" || config.Name == "" {
+		return nil, fmt.Errorf("invalid database config: missing required fields")
+	}
+
+	// Формирование строки подключения
 	connStr := fmt.Sprintf(
-		`host=%s port=%d user=%s 
-		password=%s dbname=%s sslmode=disable`,
+		`host=%s port=%d user=%s password=%s dbname=%s sslmode=disable`,
 		config.Host, config.Port, config.User,
 		config.Pass, config.Name)
 
+	// Подключение к базе данных
 	db, err := sqlx.Connect("postgres", connStr)
 	if err != nil {
+		// Логирование ошибки подключения
+		log.Errorf("Error connecting to the database: %v", err)
 		return nil, err
 	}
-	return &pgDB{DB: db}, nil
+
+	// Возвращаем структуру с подключением и логером
+	return &pgDB{
+		DB:  db,
+		log: log,
+	}, nil
 }
 
 func (pg *pgDB) CloseConnection() {
