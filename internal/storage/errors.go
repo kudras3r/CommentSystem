@@ -16,8 +16,8 @@ func FailedToGetPosts(err error) error {
 	return fmt.Errorf("failed to get posts %v : ", err)
 }
 
-func NoWithID(id uint64, kind string) error {
-	return fmt.Errorf("no %s with id %d", kind, id)
+func NoWithID(id string, kind string) error {
+	return fmt.Errorf("no %s with id %s", kind, id)
 }
 
 func InvalidLimitOrOffset(limit, offset int) error {

@@ -124,3 +124,17 @@ func (pg *pgDB) GetCommentsByParent(parent string, limit int, offset int) ([]*mo
 
 	return comments, nil
 }
+
+func (pg *pgDB) CommentsNotAllow(id string) (bool, error) {
+	var allowComms bool
+
+	err := pg.DB.Get(&allowComms, "SELECT allow_comms FROM posts WHERE id = $1", id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, storage.NoWithID(id, storage.POST)
+		}
+		return false, storage.FailedToGetPosts(err)
+	}
+
+	return allowComms, nil
+}

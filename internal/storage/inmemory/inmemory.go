@@ -8,8 +8,6 @@ import (
 	"github.com/kudras3r/CommentSystem/internal/storage/model"
 )
 
-// TODO incapsulate validation in funcs
-
 const (
 	defaultPostsCap = 128
 	defaultCommCap  = 512
@@ -30,6 +28,20 @@ func New() *IMSt {
 	}
 }
 
+func (s *IMSt) increseCapacity(kind string) {
+	switch kind {
+	case storage.POST:
+		newStorage := make([]*model.Post, len(s.posts)*2)
+		copy(newStorage, s.posts)
+		s.posts = newStorage
+
+	case storage.COMM:
+		newStorage := make([]*model.Comment, len(s.comments)*2)
+		copy(newStorage, s.comments)
+		s.comments = newStorage
+	}
+}
+
 func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*model.Post, error) {
 	post := &model.Post{
 		Title:      title,
@@ -42,7 +54,9 @@ func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*
 	s.posts[s.pp] = post
 	s.pp++
 
-	// TODO increase capacity
+	if s.pp/uint64(len(s.posts))*100 > MAXCAPCOEF {
+		s.increseCapacity(storage.POST)
+	}
 
 	return post, nil
 }
@@ -53,7 +67,7 @@ func (s *IMSt) GetPost(id string) (*model.Post, error) {
 		return nil, storage.FailedToGetPosts(err)
 	}
 	if uid >= s.pp {
-		return nil, storage.NoWithID(uid, storage.POST)
+		return nil, storage.NoWithID(id, storage.POST)
 	}
 
 	return s.posts[uid], nil
@@ -82,7 +96,9 @@ func (s *IMSt) CreateComment(postID string, content string, authorID string, par
 	s.comments[s.pp] = comm
 	s.cp++
 
-	// TODO increase capacity
+	if s.cp/uint64(len(s.comments))*100 > MAXCAPCOEF {
+		s.increseCapacity(storage.COMM)
+	}
 
 	return comm, nil
 }
@@ -93,7 +109,7 @@ func (s *IMSt) GetComment(id string) (*model.Comment, error) {
 		return nil, storage.FailedToGetComments(err)
 	}
 	if uid >= s.cp {
-		return nil, storage.NoWithID(uid, storage.COMM)
+		return nil, storage.NoWithID(id, storage.COMM)
 	}
 
 	return s.comments[uid], nil
@@ -105,7 +121,7 @@ func (s *IMSt) GetCommentsByPostID(id string, limit int, offset int) ([]*model.C
 		return nil, storage.FailedToGetWithId(storage.POST, id, err)
 	}
 	if uid >= s.pp {
-		return nil, storage.NoWithID(uid, storage.POST)
+		return nil, storage.NoWithID(id, storage.POST)
 	}
 	if limit < 0 || offset < 0 {
 		return nil, storage.InvalidLimitOrOffset(limit, offset)
@@ -128,7 +144,7 @@ func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*mod
 		return nil, storage.FailedToGetWithId(storage.COMM, parent, err)
 	}
 	if uid >= s.cp {
-		return nil, storage.NoWithID(uid, storage.POST)
+		return nil, storage.NoWithID(parent, storage.POST)
 	}
 	if limit < 0 || offset < 0 {
 		return nil, storage.InvalidLimitOrOffset(limit, offset)
@@ -143,4 +159,16 @@ func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*mod
 	}
 
 	return comments[offset : limit+offset], nil
+}
+
+func (s *IMSt) CommentsNotAllow(id string) (bool, error) {
+	uid, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return false, storage.FailedToGetWithId(storage.COMM, id, err)
+	}
+	if uid >= s.cp {
+		return false, storage.NoWithID(id, storage.POST)
+	}
+
+	return !s.posts[uid].AllowComms, nil
 }

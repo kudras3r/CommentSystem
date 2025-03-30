@@ -14,4 +14,5 @@ type Storage interface {
 	CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error)
 	GetCommentsByPostID(id string, limit int, offset int) ([]*model.Comment, error)
 	GetCommentsByParent(parent string, limit int, offset int) ([]*model.Comment, error)
+	CommentsNotAllow(id string) (bool, error)
 }

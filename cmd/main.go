@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/kudras3r/CommentSystem/internal/api/graphql"
+	"github.com/kudras3r/CommentSystem/internal/service"
+	"github.com/kudras3r/CommentSystem/internal/storage"
+	"github.com/kudras3r/CommentSystem/internal/storage/inmemory"
 	"github.com/kudras3r/CommentSystem/internal/storage/migrate"
 	"github.com/kudras3r/CommentSystem/internal/storage/postgres"
 	"github.com/kudras3r/CommentSystem/pkg/config"
@@ -18,30 +22,38 @@ import (
 )
 
 func main() {
-
 	// cfg init
 	config := config.Load()
 
 	// logger init TODO
 
 	// storage init
-	storage, err := postgres.New(config.DB)
-	if err != nil {
+	var storage storage.Storage
 
+	storageKind := flag.String("storage", "", "storage kind: db / im")
+	flag.Parse()
+
+	switch *storageKind {
+	case "db":
+		storage, err := postgres.New(config.DB)
+		if err != nil {
+			log.Fatalf("pg init error : %v", err)
+		}
+		defer storage.CloseConnection()
+
+		// migrate
+		if err := migrate.CreateTables(storage.GetConnection()); err != nil {
+
+		}
+
+	case "im":
+		storage = inmemory.New()
 	}
-	defer storage.CloseConnection()
-	// storage := inmemory.New()
-
-	// migrations
-	if err := migrate.CreateTables(storage.GetConnection()); err != nil {
-		fmt.Printf("%v", err)
-	}
-
-	fmt.Println("migrate...")
 
 	// srv generated
+	service := service.New(storage)
 	resolver := &graphql.Resolver{
-		Storage: storage,
+		Service: service,
 	}
 	srv := handler.New(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))
 

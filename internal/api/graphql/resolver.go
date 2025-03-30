@@ -1,9 +1,9 @@
 package graphql
 
 import (
-	"github.com/kudras3r/CommentSystem/internal/storage"
+	"github.com/kudras3r/CommentSystem/internal/service"
 )
 
 type Resolver struct {
-	Storage storage.Storage
+	Service *service.Service
 }
