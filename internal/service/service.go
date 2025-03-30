@@ -61,7 +61,7 @@ func (s *Service) CreateCommentHandler(postID, content, authorID string, parentI
 		return nil, CommentsNotAllow(postID)
 	}
 	if err != nil {
-		s.log.Errorf("error at %s/CreateCommentHandler() : %v", filePath, err)
+		s.log.Errorf("error at %sCreateCommentHandler() : %v", filePath, err)
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func (s *Service) CommentsHandler(postID string, first, offset *int32) ([]*model
 func (s *Service) PostsHandler(first, offset *int32) ([]*model.Post, error) {
 	ifirst, ioffset := validatePagination(first, offset)
 	s.log.Infof("getting posts | first: %d, offset: %d", ifirst, ioffset)
-	return (*s.storage).GetAllPosts(ifirst, ioffset)
+	return (*s.storage).GetPosts(ifirst, ioffset)
 }
 
 func (s *Service) PostHandler(id string) (*model.Post, error) {

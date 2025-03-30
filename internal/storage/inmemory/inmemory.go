@@ -8,37 +8,17 @@ import (
 	"github.com/kudras3r/CommentSystem/internal/storage/model"
 )
 
-const (
-	defaultPostsCap = 128
-	defaultCommCap  = 512
-	MAXCAPCOEF      = 70
-)
-
 type IMSt struct {
-	posts    []*model.Post
-	comments []*model.Comment
+	posts    map[string]*model.Post
+	comments map[string][]*model.Comment
 	pp       uint64
 	cp       uint64
 }
 
 func New() *IMSt {
 	return &IMSt{
-		posts:    make([]*model.Post, defaultPostsCap),
-		comments: make([]*model.Comment, defaultCommCap),
-	}
-}
-
-func (s *IMSt) increseCapacity(kind string) {
-	switch kind {
-	case storage.POST:
-		newStorage := make([]*model.Post, len(s.posts)*2)
-		copy(newStorage, s.posts)
-		s.posts = newStorage
-
-	case storage.COMM:
-		newStorage := make([]*model.Comment, len(s.comments)*2)
-		copy(newStorage, s.comments)
-		s.comments = newStorage
+		posts:    make(map[string]*model.Post),
+		comments: make(map[string][]*model.Comment),
 	}
 }
 
@@ -51,37 +31,40 @@ func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*
 		CreatedAt:  time.Now().Format(time.RFC3339),
 		ID:         strconv.FormatUint(s.pp, 10),
 	}
-	s.posts[s.pp] = post
+	s.posts[post.ID] = post
 	s.pp++
-
-	if s.pp/uint64(len(s.posts))*100 > MAXCAPCOEF {
-		s.increseCapacity(storage.POST)
-	}
 
 	return post, nil
 }
 
 func (s *IMSt) GetPost(id string) (*model.Post, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, storage.FailedToGetPosts(err)
-	}
-	if uid >= s.pp {
+	post, found := s.posts[id]
+	if !found {
 		return nil, storage.NoWithID(id, storage.POST)
 	}
 
-	return s.posts[uid], nil
+	return post, nil
 }
 
-func (s *IMSt) GetAllPosts(limit, offset int) ([]*model.Post, error) {
+func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
 	if limit < 0 || offset < 0 {
 		return nil, storage.InvalidLimitOrOffset(limit, offset)
 	}
-	if s.pp == 0 {
-		return []*model.Post{}, nil
+
+	var posts []*model.Post
+	for _, post := range s.posts {
+		posts = append(posts, post)
 	}
 
-	return s.posts[offset : limit+offset], nil
+	if offset >= len(posts) {
+		return []*model.Post{}, nil
+	}
+	rightBorder := offset + limit
+	if rightBorder > len(posts) {
+		rightBorder = len(posts)
+	}
+
+	return posts[offset:rightBorder], nil
 }
 
 func (s *IMSt) CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error) {
@@ -93,82 +76,78 @@ func (s *IMSt) CreateComment(postID string, content string, authorID string, par
 		CreatedAt: time.Now().Format(time.RFC3339),
 		ID:        strconv.FormatUint(s.cp, 10),
 	}
-	s.comments[s.pp] = comm
-	s.cp++
 
-	if s.cp/uint64(len(s.comments))*100 > MAXCAPCOEF {
-		s.increseCapacity(storage.COMM)
-	}
+	s.comments[postID] = append(s.comments[postID], comm)
+	s.cp++
 
 	return comm, nil
 }
 
 func (s *IMSt) GetComment(id string) (*model.Comment, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, storage.FailedToGetComments(err)
-	}
-	if uid >= s.cp {
-		return nil, storage.NoWithID(id, storage.COMM)
+	for _, comments := range s.comments {
+		for _, comm := range comments {
+			if comm.ID == id {
+				return comm, nil
+			}
+		}
 	}
 
-	return s.comments[uid], nil
+	return nil, storage.NoWithID(id, storage.COMM)
 }
 
-func (s *IMSt) GetCommentsByPostID(id string, limit int, offset int) ([]*model.Comment, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, storage.FailedToGetWithId(storage.POST, id, err)
-	}
-	if uid >= s.pp {
-		return nil, storage.NoWithID(id, storage.POST)
+func (s *IMSt) GetCommentsByPostID(postID string, limit int, offset int) ([]*model.Comment, error) {
+	comments, found := s.comments[postID]
+	if !found {
+		return nil, storage.NoWithID(postID, storage.POST)
 	}
 	if limit < 0 || offset < 0 {
 		return nil, storage.InvalidLimitOrOffset(limit, offset)
 	}
 
-	var comments []*model.Comment
-	for i := uint64(0); i < s.cp; i++ {
-		comm := s.comments[i]
-		if comm.PostID == id {
-			comments = append(comments, comm)
+	var filteredComments []*model.Comment
+	for _, comm := range comments {
+		if comm.ParentID == nil {
+			filteredComments = append(filteredComments, comm)
 		}
 	}
 
-	return comments[offset : limit+offset], nil
+	if offset >= len(filteredComments) {
+		return []*model.Comment{}, nil
+	}
+	rightBorder := offset + limit
+	if rightBorder > len(filteredComments) {
+		rightBorder = len(filteredComments)
+	}
+
+	return filteredComments[offset:rightBorder], nil
 }
 
 func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*model.Comment, error) {
-	uid, err := strconv.ParseUint(parent, 10, 64)
-	if err != nil {
-		return nil, storage.FailedToGetWithId(storage.COMM, parent, err)
-	}
-	if uid >= s.cp {
-		return nil, storage.NoWithID(parent, storage.POST)
-	}
-	if limit < 0 || offset < 0 {
-		return nil, storage.InvalidLimitOrOffset(limit, offset)
-	}
-
 	var comments []*model.Comment
-	for i := uint64(0); i < s.cp; i++ {
-		comm := s.comments[i]
-		if comm.ParentID == &parent {
-			comments = append(comments, comm)
+	for _, comms := range s.comments {
+		for _, comm := range comms {
+			if comm.ParentID != nil && *comm.ParentID == parent {
+				comments = append(comments, comm)
+			}
 		}
 	}
 
-	return comments[offset : limit+offset], nil
+	if offset >= len(comments) {
+		return []*model.Comment{}, nil
+	}
+	rightBorder := offset + limit
+	if rightBorder > len(comments) {
+		rightBorder = len(comments)
+	}
+
+	return comments[offset:rightBorder], nil
 }
 
-func (s *IMSt) CommentsNotAllow(id string) (bool, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return false, storage.FailedToGetWithId(storage.COMM, id, err)
-	}
-	if uid >= s.cp {
-		return false, storage.NoWithID(id, storage.POST)
+func (s *IMSt) CommentsNotAllow(postID string) (bool, error) {
+	post, found := s.posts[postID]
+	if !found {
+		return false, storage.NoWithID(postID, storage.POST)
 	}
 
-	return !s.posts[uid].AllowComms, nil
+	return !post.AllowComms, nil
 }

@@ -65,7 +65,7 @@ func (pg *pgDB) GetPost(id string) (*model.Post, error) {
 	return &post, nil
 }
 
-func (pg *pgDB) GetAllPosts(limit, offset int) ([]*model.Post, error) {
+func (pg *pgDB) GetPosts(limit, offset int) ([]*model.Post, error) {
 	query := `SELECT id, title, content, allow_comms, created_at, rating, author_id
 		FROM posts 
 		ORDER BY created_at DESC
