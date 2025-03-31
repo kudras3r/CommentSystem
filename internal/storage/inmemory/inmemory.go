@@ -6,6 +6,11 @@ import (
 
 	"github.com/kudras3r/CommentSystem/internal/storage"
 	"github.com/kudras3r/CommentSystem/internal/storage/model"
+	"github.com/kudras3r/CommentSystem/pkg/logger"
+)
+
+const (
+	filePath = "internal/storage/inmemory/inmemory.go/"
 )
 
 type IMSt struct {
@@ -13,16 +18,21 @@ type IMSt struct {
 	comments map[string][]*model.Comment
 	pp       uint64
 	cp       uint64
+
+	log *logger.Logger
 }
 
-func New() *IMSt {
+func New(log *logger.Logger) *IMSt {
 	return &IMSt{
 		posts:    make(map[string]*model.Post),
 		comments: make(map[string][]*model.Comment),
+		log:      log,
 	}
 }
 
 func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*model.Post, error) {
+	s.log.Infof("%sCreatePost() creating post with title: %s, content: %s, authorID: %s, allowComment: %t", filePath, title, content, authorID, allowComment)
+
 	post := &model.Post{
 		Title:      title,
 		Content:    content,
@@ -38,8 +48,11 @@ func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*
 }
 
 func (s *IMSt) GetPost(id string) (*model.Post, error) {
+	s.log.Infof("%sGetPost() fetching post with id: %s", filePath, id)
+
 	post, found := s.posts[id]
 	if !found {
+		s.log.Errorf("%sGetPost() post not found with id: %s", filePath, id)
 		return nil, storage.NoWithID(id, storage.POST)
 	}
 
@@ -47,9 +60,7 @@ func (s *IMSt) GetPost(id string) (*model.Post, error) {
 }
 
 func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
-	if limit < 0 || offset < 0 {
-		return nil, storage.InvalidLimitOrOffset(limit, offset)
-	}
+	s.log.Infof("%sGetPosts() fetching posts with limit: %d, offset: %d", filePath, limit, offset)
 
 	var posts []*model.Post
 	for _, post := range s.posts {
@@ -68,6 +79,8 @@ func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
 }
 
 func (s *IMSt) CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error) {
+	s.log.Infof("%sCreateComment() creating comment for postID: %s, authorID: %s", filePath, postID, authorID)
+
 	comm := &model.Comment{
 		PostID:    postID,
 		Content:   content,
@@ -83,25 +96,13 @@ func (s *IMSt) CreateComment(postID string, content string, authorID string, par
 	return comm, nil
 }
 
-func (s *IMSt) GetComment(id string) (*model.Comment, error) {
-	for _, comments := range s.comments {
-		for _, comm := range comments {
-			if comm.ID == id {
-				return comm, nil
-			}
-		}
-	}
-
-	return nil, storage.NoWithID(id, storage.COMM)
-}
-
 func (s *IMSt) GetCommentsByPostID(postID string, limit int, offset int) ([]*model.Comment, error) {
+	s.log.Infof("%sGetCommentsByPostID() fetching comments for postID: %s with limit: %d, offset: %d", filePath, postID, limit, offset)
+
 	comments, found := s.comments[postID]
 	if !found {
-		return nil, storage.NoWithID(postID, storage.POST)
-	}
-	if limit < 0 || offset < 0 {
-		return nil, storage.InvalidLimitOrOffset(limit, offset)
+		s.log.Warnf("%sGetCommentsByPostID() no comments found for postID: %s", filePath, postID)
+		return []*model.Comment{}, nil
 	}
 
 	var filteredComments []*model.Comment
@@ -123,8 +124,9 @@ func (s *IMSt) GetCommentsByPostID(postID string, limit int, offset int) ([]*mod
 }
 
 func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*model.Comment, error) {
+	s.log.Infof("%sGetCommentsByParent() fetching comments with parentID: %s with limit: %d, offset: %d", filePath, parent, limit, offset)
+
 	var comments []*model.Comment
-	// bad O(n) on comments ! think about it TODO
 	for _, comms := range s.comments {
 		for _, comm := range comms {
 			if comm.ParentID != nil && *comm.ParentID == parent {
@@ -144,9 +146,27 @@ func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*mod
 	return comments[offset:rightBorder], nil
 }
 
+func (s *IMSt) GetComment(id string) (*model.Comment, error) {
+	s.log.Infof("%sGetComment() fetching comment with id: %s", filePath, id)
+
+	for _, comments := range s.comments {
+		for _, comm := range comments {
+			if comm.ID == id {
+				return comm, nil
+			}
+		}
+	}
+
+	s.log.Errorf("%sGetComment() comment not found with id: %s", filePath, id)
+	return nil, storage.NoWithID(id, storage.COMM)
+}
+
 func (s *IMSt) CommentsNotAllow(postID string) (bool, error) {
+	s.log.Infof("%sCommentsNotAllow() checking if comments are allowed for postID: %s", filePath, postID)
+
 	post, found := s.posts[postID]
 	if !found {
+		s.log.Errorf("%sCommentsNotAllow() post not found with id: %s", filePath, postID)
 		return false, storage.NoWithID(postID, storage.POST)
 	}
 

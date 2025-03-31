@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	DELAULTSTORAGE = "db"
+	DELAULTSTORAGE = "inmemory"
 )
 
 func main() {
+
 	// cfg init
 	config := config.Load()
 
@@ -48,6 +49,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("cannot init db : %v", err)
 		}
+		defer pg.CloseConnection()
 
 		// migrate
 		if err := migration.MakeMigrations(pg.GetConnection()); err != nil {
@@ -61,9 +63,10 @@ func main() {
 		storage = pg
 
 	case "inmemory":
-		storage = inmemory.New()
+		storage = inmemory.New(log)
 		log.Info("init inmemory storage...")
 	}
+
 	log.Warnf("by default storage kind : %s, please choose it --storage=db / im if needed", DELAULTSTORAGE)
 	if storage == nil {
 		log.Fatal("storage is not initialized properly!")
@@ -93,6 +96,7 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
+	// run
 	log.Infof("connect to http://%s:%s/ for GraphQL playground", config.Server.Host, config.Server.Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port), nil))
 }
