@@ -13,7 +13,7 @@ const (
 	filePath = "internal/storage/inmemory/inmemory.go/"
 
 	maxCommentSliceFill     = 70
-	initialCommentSliceSize = 5
+	initialCommentSliceSize = 256
 )
 
 type IMSt struct {
