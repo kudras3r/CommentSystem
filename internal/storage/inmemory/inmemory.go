@@ -39,7 +39,7 @@ func New(log *logger.Logger) *IMSt {
 }
 
 func (s *IMSt) increaseCommentSliceSize() {
-	if len(s.comms) * 100 / cap(s.comms) >= maxCommentSliceFill {
+	if s.cp * 100 / cap(s.comms) >= maxCommentSliceFill {
 		newSize := cap(s.comms) * 2
 		newComms := make([]*model.Comment, len(s.comms), newSize)
 		copy(newComms, s.comms)
