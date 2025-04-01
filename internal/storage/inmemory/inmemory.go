@@ -100,6 +100,7 @@ func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
 
 func (s *IMSt) CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error) {
 	s.log.Infof("%sCreateComment() creating comment for postID: %s, authorID: %s", filePath, postID, authorID)
+    s.increaseCommentSliceSize()
 
 	comm := &model.Comment{
 		PostID:    postID,
