@@ -30,7 +30,7 @@ type IMSt struct {
 func New(log *logger.Logger) *IMSt {
 	return &IMSt{
 		posts:           make(map[string]*model.Post),
-		comms:           make([]*model.Comment,0,  initialCommentSliceSize),
+		comms:           make([]*model.Comment,initialCommentSliceSize),
 		commsByPostID:   make(map[string][]uint64),
 		commsByParentID: make(map[string][]uint64),
 
