@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/kudras3r/CommentSystem/internal/storage"
@@ -29,11 +30,20 @@ func New(config config.DB, log *logger.Logger) (*pgDB, error) {
 		config.Host, config.Port, config.User,
 		config.Pass, config.Name)
 
-	db, err := sqlx.Connect("postgres", connStr)
-	if err != nil {
-		log.Errorf("%sNew() failed to connect to db: %v", filePath, err)
-		return nil, err
+	var attempt int
+	var err error
+	var db *sqlx.DB
+	for ; attempt < 5; attempt++ {
+		time.Sleep(time.Millisecond * 200)
+		db, err = sqlx.Connect("postgres", connStr)
+		if err != nil {
+			log.Errorf("%sNew() failed to connect db attempt %d: %v", filePath, attempt, err)
+		}
 	}
+	if err != nil {
+		log.Fatalf("failed to connect db %d times", attempt)
+	}
+
 	log.Infof("%sNew() successfully connected to db", filePath)
 	return &pgDB{
 		DB:  db,

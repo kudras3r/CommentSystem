@@ -4,6 +4,10 @@ import "fmt"
 
 // TODO more informative..
 
+func FailedToConnect() error {
+	return fmt.Errorf("failed to connect db")
+}
+
 func FailedToInsert(err error) error {
 	return fmt.Errorf("failed to insert data %v : ", err)
 }
