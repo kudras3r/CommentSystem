@@ -12,8 +12,8 @@ import (
 const (
 	filePath = "internal/storage/inmemory/inmemory.go/"
 
-	maxCommentSliceFill = 70
-	initialCommentSliceSize = 256
+	maxCommentSliceFill     = 70
+	initialCommentSliceSize = 5
 )
 
 type IMSt struct {
@@ -30,7 +30,7 @@ type IMSt struct {
 func New(log *logger.Logger) *IMSt {
 	return &IMSt{
 		posts:           make(map[string]*model.Post),
-		comms:           make([]*model.Comment,initialCommentSliceSize),
+		comms:           make([]*model.Comment, initialCommentSliceSize),
 		commsByPostID:   make(map[string][]uint64),
 		commsByParentID: make(map[string][]uint64),
 
@@ -39,9 +39,10 @@ func New(log *logger.Logger) *IMSt {
 }
 
 func (s *IMSt) increaseCommentSliceSize() {
-	if s.cp * 100 / cap(s.comms) >= maxCommentSliceFill {
+	if s.cp*100/uint64(cap(s.comms)) >= maxCommentSliceFill {
 		newSize := cap(s.comms) * 2
-		newComms := make([]*model.Comment, len(s.comms), newSize)
+		s.log.Warnf("increase comms storage size : %d", newSize)
+		newComms := make([]*model.Comment, newSize)
 		copy(newComms, s.comms)
 		s.comms = newComms
 	}
@@ -100,7 +101,7 @@ func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
 
 func (s *IMSt) CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error) {
 	s.log.Infof("%sCreateComment() creating comment for postID: %s, authorID: %s", filePath, postID, authorID)
-        s.increaseCommentSliceSize()
+	s.increaseCommentSliceSize()
 
 	comm := &model.Comment{
 		PostID:    postID,
