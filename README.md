@@ -17,7 +17,7 @@ cd CommentSystem/
 In root create .env file:
 
 ```env
-DB_HOST=comment-system-db # or 0.0.0.0/localhost if run inmemory
+DB_HOST=comment-system-db # for db run with d-compose or 0.0.0.0 for manually run
 DB_USER=ozon_keker 
 DB_PASS=1234
 DB_NAME=comm_sys_db
