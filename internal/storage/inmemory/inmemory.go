@@ -11,6 +11,9 @@ import (
 
 const (
 	filePath = "internal/storage/inmemory/inmemory.go/"
+
+	maxCommentSliceFill = 70
+	initialCommentSliceSize = 256
 )
 
 type IMSt struct {
@@ -32,6 +35,15 @@ func New(log *logger.Logger) *IMSt {
 		commsByParentID: make(map[string][]uint64),
 
 		log: log,
+	}
+}
+
+func (s *IMSt) increaseCommentSliceSize() {
+	if len(s.comms) * 100 / cap(s.comms) >= maxCommentSliceFill {
+		newSize := cap(s.comms) * 2
+		newComms := make([]*model.Comment, len(s.comms), newSize)
+		copy(newComms, s.comms)
+		s.comms = newComms
 	}
 }
 
