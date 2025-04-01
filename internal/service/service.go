@@ -12,7 +12,7 @@ import (
 const (
 	MAXCOMMENTLEN = 2000
 	DEFAULTLIMIT  = 10
-	filePath      = "internal/service/service.go/"
+	filePath      = "internal/service/service.go/" // for logging
 )
 
 type Service struct {
@@ -51,7 +51,7 @@ func validatePagination(first, offset *int32, log *logger.Logger) (int, int, err
 		return -1, -1, InvalidLimitOrOffset(ifirst, ioffset)
 	}
 
-	return ifirst, ioffset, nil
+	return ifirst, ioffset, nil // as ints
 }
 
 func (s *Service) ChildrenHandler(parentID string, first, offset *int32) ([]*model.Comment, error) {
@@ -60,6 +60,7 @@ func (s *Service) ChildrenHandler(parentID string, first, offset *int32) ([]*mod
 		return nil, err
 	}
 	s.log.Infof("getting childrens | parentID: %s, first: %d, offset: %d", parentID, ifirst, ioffset)
+
 	return s.storage.GetCommentsByParent(parentID, ifirst, ioffset)
 }
 
@@ -93,7 +94,6 @@ func (s *Service) CreateCommentHandler(postID, content, authorID string, parentI
 			s.log.Errorf("error fetching parent comment: %v", err)
 			return nil, err
 		}
-
 		if parentComment.PostID != postID {
 			s.log.Errorf("parent comment with ID %s does not belong to post %s", *parentID, postID)
 			return nil, PostAnCommRelationError()

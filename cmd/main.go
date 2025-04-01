@@ -28,11 +28,10 @@ const (
 )
 
 func main() {
-
 	// cfg init
 	config := config.Load()
 
-	// logger init TODO
+	// logger init
 	log := logger.New(config.LogLevel)
 	log.Infof("set level %s", log.Level)
 
@@ -44,11 +43,7 @@ func main() {
 
 	switch *storageKind {
 	case "db":
-		var err error
-		pg, err := postgres.New(config.DB, log)
-		if err != nil {
-			log.Fatalf("cannot init db : %v", err)
-		}
+		pg := postgres.New(config.DB, log)
 		defer pg.CloseConnection()
 
 		// migrate
@@ -67,7 +62,7 @@ func main() {
 		log.Info("init inmemory storage...")
 	}
 
-	log.Warnf("by default storage kind : %s, please choose it --storage=db / im if needed", DELAULTSTORAGE)
+	log.Warnf("by default storage kind in manual run : %s, please choose it --storage=db / im if needed", DELAULTSTORAGE)
 	if storage == nil {
 		log.Fatal("storage is not initialized properly!")
 	}

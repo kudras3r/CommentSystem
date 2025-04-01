@@ -1,6 +1,11 @@
 # CommentSystem
 
-Test tast in Ozon.
+Test task in Ozon.
+
+## Description
+
+The project is a system for adding and retrieving posts and comments under them, using GraphQL, with the choice of data storage type: PostgreSQL or in-memory. It includes a pagination system based on the limit-offset method. The project also features operation logging and is deployed as a Docker container.
+
 
 ## Installation
 
