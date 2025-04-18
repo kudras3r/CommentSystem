@@ -26,7 +26,7 @@ DB_PORT=5432
 LOG_LEVEL=DEBUG # INFO
 
 SERVER_HOST=0.0.0.0
-SERVER_POST=8080
+SERVER_PORT=8080
 ```
 
 ### Docker
@@ -334,6 +334,7 @@ Creating a comment that links to a comment located under another post:
 - [30.03.25] add service level | add logger | inmemory rework
 - [31.03.25] add logging | add docker | bug fixes
 - [01.03.25] docker fix | readme update | bug fixes
+- [18.04.25] add rwmutex
 
 
 

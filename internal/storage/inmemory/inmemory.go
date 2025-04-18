@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/kudras3r/CommentSystem/internal/storage"
@@ -12,11 +13,13 @@ import (
 const (
 	filePath = "internal/storage/inmemory/inmemory.go/"
 
-	maxCommentSliceFill     = 70
-	initialCommentSliceSize = 256
+	MAXFILL   = 70
+	INITCSIZE = 256
 )
 
 type IMSt struct {
+	mu sync.RWMutex
+
 	posts           map[string]*model.Post
 	comms           []*model.Comment
 	commsByPostID   map[string][]uint64 // indexes
@@ -30,7 +33,7 @@ type IMSt struct {
 func New(log *logger.Logger) *IMSt {
 	return &IMSt{
 		posts:           make(map[string]*model.Post),
-		comms:           make([]*model.Comment, initialCommentSliceSize),
+		comms:           make([]*model.Comment, INITCSIZE),
 		commsByPostID:   make(map[string][]uint64),
 		commsByParentID: make(map[string][]uint64),
 
@@ -38,8 +41,13 @@ func New(log *logger.Logger) *IMSt {
 	}
 }
 
-func (s *IMSt) increaseCommentSliceSize() {
-	if s.cp*100/uint64(cap(s.comms)) >= maxCommentSliceFill {
+func (s *IMSt) increaseCap() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.log.Infof("%sincreaseCap() increasing capacity", filePath)
+
+	if s.cp*100/uint64(cap(s.comms)) >= MAXFILL {
 		newSize := cap(s.comms) * 2
 		s.log.Warnf("increase comms storage size : %d", newSize)
 		newComms := make([]*model.Comment, newSize)
@@ -49,6 +57,9 @@ func (s *IMSt) increaseCommentSliceSize() {
 }
 
 func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*model.Post, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.log.Infof("%sCreatePost() creating post with title: %s, content: %s, authorID: %s, allowComment: %t", filePath, title, content, authorID, allowComment)
 
 	post := &model.Post{
@@ -67,6 +78,9 @@ func (s *IMSt) CreatePost(title, content, authorID string, allowComment bool) (*
 }
 
 func (s *IMSt) GetPost(id string) (*model.Post, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.log.Infof("%sGetPost() fetching post with id: %s", filePath, id)
 
 	post, found := s.posts[id]
@@ -79,6 +93,9 @@ func (s *IMSt) GetPost(id string) (*model.Post, error) {
 }
 
 func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.log.Infof("%sGetPosts() fetching posts with limit: %d, offset: %d", filePath, limit, offset)
 
 	var posts []*model.Post
@@ -100,8 +117,11 @@ func (s *IMSt) GetPosts(limit, offset int) ([]*model.Post, error) {
 }
 
 func (s *IMSt) CreateComment(postID string, content string, authorID string, parentID *string) (*model.Comment, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.log.Infof("%sCreateComment() creating comment for postID: %s, authorID: %s", filePath, postID, authorID)
-	s.increaseCommentSliceSize()
+	s.increaseCap()
 
 	comm := &model.Comment{
 		PostID:    postID,
@@ -134,6 +154,9 @@ func (s *IMSt) CreateComment(postID string, content string, authorID string, par
 }
 
 func (s *IMSt) GetCommentsByPostID(postID string, limit int, offset int) ([]*model.Comment, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.log.Infof("%sGetCommentsByPostID() fetching comments for postID: %s with limit: %d, offset: %d", filePath, postID, limit, offset)
 
 	commIDs, found := s.commsByPostID[postID]
@@ -167,6 +190,9 @@ func (s *IMSt) GetCommentsByPostID(postID string, limit int, offset int) ([]*mod
 }
 
 func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*model.Comment, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.log.Infof("%sGetCommentsByParent() fetching comments with parentID: %s with limit: %d, offset: %d", filePath, parent, limit, offset)
 
 	commIDs, found := s.commsByParentID[parent]
@@ -193,6 +219,9 @@ func (s *IMSt) GetCommentsByParent(parent string, limit int, offset int) ([]*mod
 }
 
 func (s *IMSt) GetComment(id string) (*model.Comment, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.log.Infof("%sGetComment() fetching comment with id: %s", filePath, id)
 
 	uid, err := strconv.ParseUint(id, 10, 64)
@@ -209,6 +238,9 @@ func (s *IMSt) GetComment(id string) (*model.Comment, error) {
 }
 
 func (s *IMSt) CommentsNotAllow(postID string) (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.log.Infof("%sCommentsNotAllow() checking if comments are allowed for postID: %s", filePath, postID)
 
 	post, found := s.posts[postID]
